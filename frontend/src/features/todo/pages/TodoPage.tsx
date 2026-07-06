@@ -125,11 +125,11 @@ export const TodoPage: React.FC = () => {
         <header className="flex items-center justify-between mb-8 pb-6 border-b border-slate-200/60 dark:border-slate-800/80">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center text-white font-bold shadow-md shadow-primary-500/20">
-              N
+              T
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
-                NotionTodo
+                TodoList
               </h1>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                 Manage your tasks beautifully.
@@ -295,7 +295,7 @@ export const TodoPage: React.FC = () => {
             <p className="text-sm text-slate-400 dark:text-slate-500 max-w-sm mb-6">
               {titleQuery || priorityFilter !== 'ALL' || statusFilter
                 ? 'Try adjusting your search queries or filter categories.'
-                : 'Get started by creating your first Notion-style task.'}
+                : 'Get started by creating your first task.'}
             </p>
             {(titleQuery || priorityFilter !== 'ALL' || statusFilter) ? (
               <button
