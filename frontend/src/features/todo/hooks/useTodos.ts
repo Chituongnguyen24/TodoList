@@ -7,6 +7,8 @@ export const useTodos = (params?: {
   title?: string;
   status?: TodoStatus;
   priority?: string;
+  page?: number;
+  size?: number;
   sortBy?: string;
   sortDir?: string;
 }) => {

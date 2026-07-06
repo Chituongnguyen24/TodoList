@@ -21,6 +21,10 @@ export const TodoPage: React.FC = () => {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(5);
+
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
@@ -31,6 +35,7 @@ export const TodoPage: React.FC = () => {
   useEffect(() => {
     const handler = setTimeout(() => {
       setTitleQuery(searchInput);
+      setCurrentPage(0);
     }, 300); // 300ms debounce
     return () => clearTimeout(handler);
   }, [searchInput]);
@@ -54,11 +59,14 @@ export const TodoPage: React.FC = () => {
     title: titleQuery || undefined,
     status: statusFilter,
     priority: priorityFilter === 'ALL' ? undefined : priorityFilter,
+    page: currentPage,
+    size: pageSize,
     sortBy,
     sortDir,
   };
 
-  const { data: todos = [], isLoading, isError, refetch } = useTodos(queryParams);
+  const { data: paginatedData, isLoading, isError, refetch } = useTodos(queryParams);
+  const todos = paginatedData?.content || [];
   const { data: stats, isLoading: isStatsLoading } = useTodoStats();
 
   // Mutations
@@ -181,7 +189,10 @@ export const TodoPage: React.FC = () => {
                 <Filter className="w-3.5 h-3.5 text-slate-400" />
                 <select
                   value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value)}
+                  onChange={(e) => {
+                    setPriorityFilter(e.target.value);
+                    setCurrentPage(0);
+                  }}
                   className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-xl text-xs font-medium focus:outline-none"
                 >
                   <option value="ALL">All Priorities</option>
@@ -196,7 +207,10 @@ export const TodoPage: React.FC = () => {
                 <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setCurrentPage(0);
+                  }}
                   className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-xl text-xs font-medium focus:outline-none"
                 >
                   <option value="createdAt">Date Created</option>
@@ -207,7 +221,10 @@ export const TodoPage: React.FC = () => {
                 </select>
 
                 <button
-                  onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
+                  onClick={() => {
+                    setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+                    setCurrentPage(0);
+                  }}
                   className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 focus:outline-none transition-colors text-xs font-semibold"
                   title={`Sort direction: ${sortDir === 'asc' ? 'Ascending' : 'Descending'}`}
                 >
@@ -238,7 +255,10 @@ export const TodoPage: React.FC = () => {
               return (
                 <button
                   key={idx}
-                  onClick={() => setStatusFilter(tab.value)}
+                  onClick={() => {
+                    setStatusFilter(tab.value);
+                    setCurrentPage(0);
+                  }}
                   className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold tracking-wide cursor-pointer transition-all whitespace-nowrap ${
                     isActive
                       ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
@@ -316,17 +336,70 @@ export const TodoPage: React.FC = () => {
           </div>
         ) : (
           // Task Cards List
-          <div className="space-y-3">
-            {todos.map((todo) => (
-              <TodoCard
-                key={todo.id}
-                todo={todo}
-                onEdit={handleOpenEditModal}
-                onDelete={handleOpenDeleteModal}
-                onStatusChange={handleStatusChange}
-              />
-            ))}
-          </div>
+          <>
+            <div className="space-y-3">
+              {todos.map((todo) => (
+                <TodoCard
+                  key={todo.id}
+                  todo={todo}
+                  onEdit={handleOpenEditModal}
+                  onDelete={handleOpenDeleteModal}
+                  onStatusChange={handleStatusChange}
+                />
+              ))}
+            </div>
+
+            {/* Pagination Toolbar */}
+            {!isLoading && !isError && todos.length > 0 && paginatedData && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 p-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-xs">
+                {/* Page Size Selector */}
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <span>Show</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(0);
+                    }}
+                    className="px-2 py-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-md focus:outline-none cursor-pointer"
+                  >
+                    <option value={5}>5 tasks</option>
+                    <option value={10}>10 tasks</option>
+                    <option value={20}>20 tasks</option>
+                  </select>
+                  <span>per page</span>
+                </div>
+
+                {/* Page Navigation */}
+                <div className="flex items-center gap-3 font-sans">
+                  <button
+                    disabled={currentPage === 0}
+                    onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
+                    className="px-3 py-1.5 border border-slate-200 dark:border-slate-750/70 rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors focus:outline-none"
+                  >
+                    Previous
+                  </button>
+                  
+                  <span className="text-xs text-slate-500">
+                    Page {currentPage + 1} of {paginatedData.totalPages || 1}
+                  </span>
+
+                  <button
+                    disabled={paginatedData.last || currentPage >= paginatedData.totalPages - 1}
+                    onClick={() => setCurrentPage((prev) => prev + 1)}
+                    className="px-3 py-1.5 border border-slate-200 dark:border-slate-750/70 rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors focus:outline-none"
+                  >
+                    Next
+                  </button>
+                </div>
+
+                {/* Total Items count */}
+                <div className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                  Showing {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, paginatedData.totalElements)} of {paginatedData.totalElements} tasks
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

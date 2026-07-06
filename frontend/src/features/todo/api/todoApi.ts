@@ -1,15 +1,17 @@
 import api from '../../../services/api';
-import type { Todo, TodoCreateRequest, TodoUpdateRequest, TodoStatus, TodoStats } from '../types';
+import type { Todo, TodoCreateRequest, TodoUpdateRequest, TodoStatus, TodoStats, PageResponse } from '../types';
 
 export const todoApi = {
   getAllTodos: async (params?: {
     title?: string;
     status?: TodoStatus;
     priority?: string;
+    page?: number;
+    size?: number;
     sortBy?: string;
     sortDir?: string;
-  }): Promise<Todo[]> => {
-    const response = await api.get<Todo[]>('/todos', { params });
+  }): Promise<PageResponse<Todo>> => {
+    const response = await api.get<PageResponse<Todo>>('/todos', { params });
     return response.data;
   },
 

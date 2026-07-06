@@ -2,6 +2,7 @@ package com.todo.service;
 
 import com.todo.dto.request.TodoCreateRequest;
 import com.todo.dto.request.TodoUpdateRequest;
+import com.todo.dto.response.PageResponse;
 import com.todo.dto.response.TodoResponse;
 import com.todo.dto.response.TodoStatsResponse;
 import com.todo.entity.Todo;
@@ -11,6 +12,9 @@ import com.todo.exception.ResourceNotFoundException;
 import com.todo.mapper.TodoMapper;
 import com.todo.repository.TodoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +31,7 @@ public class TodoServiceImpl implements TodoService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TodoResponse> getAllTodos(String title, TodoStatus status, TodoPriority priority, String sortBy, String sortDir) {
+    public PageResponse<TodoResponse> getAllTodos(String title, TodoStatus status, TodoPriority priority, int page, int size, String sortBy, String sortDir) {
         Sort.Direction direction = Sort.Direction.DESC;
         if (sortDir != null && sortDir.equalsIgnoreCase("asc")) {
             direction = Sort.Direction.ASC;
@@ -47,10 +51,22 @@ public class TodoServiceImpl implements TodoService {
         }
 
         Sort sort = Sort.by(direction, sortProperty);
-        List<Todo> todos = todoRepository.searchAndFilter(title, status, priority, sort);
-        return todos.stream()
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<Todo> todoPage = todoRepository.searchAndFilter(title, status, priority, pageable);
+        
+        List<TodoResponse> content = todoPage.getContent().stream()
                 .map(todoMapper::toResponse)
                 .collect(Collectors.toList());
+
+        return PageResponse.<TodoResponse>builder()
+                .content(content)
+                .page(todoPage.getNumber())
+                .size(todoPage.getSize())
+                .totalElements(todoPage.getTotalElements())
+                .totalPages(todoPage.getTotalPages())
+                .last(todoPage.isLast())
+                .build();
     }
 
     @Override
@@ -102,13 +118,15 @@ public class TodoServiceImpl implements TodoService {
     @Override
     @Transactional(readOnly = true)
     public List<TodoResponse> searchTodos(String title) {
-        return getAllTodos(title, null, null, "createdAt", "desc");
+        // Return first 100 search results for direct simple searches if needed, or paginate
+        return getAllTodos(title, null, null, 0, 100, "createdAt", "desc").getContent();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TodoResponse> filterTodos(TodoStatus status, TodoPriority priority) {
-        return getAllTodos(null, status, priority, "createdAt", "desc");
+        // Return first 100 filter results for direct simple filters, or paginate
+        return getAllTodos(null, status, priority, 0, 100, "createdAt", "desc").getContent();
     }
 
     @Override

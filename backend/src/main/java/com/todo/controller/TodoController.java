@@ -3,6 +3,7 @@ package com.todo.controller;
 import com.todo.dto.request.TodoCreateRequest;
 import com.todo.dto.request.TodoStatusUpdateRequest;
 import com.todo.dto.request.TodoUpdateRequest;
+import com.todo.dto.response.PageResponse;
 import com.todo.dto.response.TodoResponse;
 import com.todo.dto.response.TodoStatsResponse;
 import com.todo.entity.TodoPriority;
@@ -28,14 +29,16 @@ public class TodoController {
     private final TodoService todoService;
 
     @GetMapping
-    @Operation(summary = "Get list of todos with search, filter, and sorting")
-    public ResponseEntity<List<TodoResponse>> getAllTodos(
+    @Operation(summary = "Get list of todos with search, filter, and sorting (paginated)")
+    public ResponseEntity<PageResponse<TodoResponse>> getAllTodos(
             @RequestParam(required = false) String title,
             @RequestParam(required = false) TodoStatus status,
             @RequestParam(required = false) TodoPriority priority,
-            @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
-            @RequestParam(required = false, defaultValue = "desc") String sortDir) {
-        return ResponseEntity.ok(todoService.getAllTodos(title, status, priority, sortBy, sortDir));
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        return ResponseEntity.ok(todoService.getAllTodos(title, status, priority, page, size, sortBy, sortDir));
     }
 
     @GetMapping("/{id}")
@@ -75,13 +78,13 @@ public class TodoController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Search todos by title")
+    @Operation(summary = "Search todos by title (returns up to first 100 results)")
     public ResponseEntity<List<TodoResponse>> searchTodos(@RequestParam("q") String query) {
         return ResponseEntity.ok(todoService.searchTodos(query));
     }
 
     @GetMapping("/filter")
-    @Operation(summary = "Filter todos by status and/or priority")
+    @Operation(summary = "Filter todos by status and/or priority (returns up to first 100 results)")
     public ResponseEntity<List<TodoResponse>> filterTodos(
             @RequestParam(required = false) TodoStatus status,
             @RequestParam(required = false) TodoPriority priority) {
