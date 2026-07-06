@@ -20,7 +20,7 @@ public class SeedDataConfig implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (todoRepository.count() == 0) {
+        if (todoRepository.count() != 50) {
             List<Todo> seeds = new ArrayList<>();
             LocalDateTime now = LocalDateTime.now();
 
@@ -117,19 +117,23 @@ public class SeedDataConfig implements CommandLineRunner {
                 now.minusDays(8)
             };
 
-            for (int i = 0; i < titles.length; i++) {
-                Todo todo = Todo.builder()
-                        .title(titles[i])
-                        .description(descriptions[i])
-                        .status(statuses[i])
-                        .priority(priorities[i])
-                        .dueDate(dueDates[i])
-                        .build();
-                seeds.add(todo);
+            todoRepository.deleteAll(); // Clean old data for predictable testing
+
+            for (int batch = 1; batch <= 2; batch++) {
+                for (int i = 0; i < titles.length; i++) {
+                    Todo todo = Todo.builder()
+                            .title(titles[i] + " (Part " + batch + ")")
+                            .description(descriptions[i])
+                            .status(statuses[i])
+                            .priority(priorities[i])
+                            .dueDate(dueDates[i] != null ? dueDates[i].plusDays(batch * 2) : null)
+                            .build();
+                    seeds.add(todo);
+                }
             }
 
             todoRepository.saveAll(seeds);
-            System.out.println(">>> Seeded 25 tasks into Database successfully for pagination testing!");
+            System.out.println(">>> Seeded 50 tasks into Database successfully for pagination testing!");
         }
     }
 }
